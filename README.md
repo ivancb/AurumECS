@@ -1,5 +1,5 @@
 # AurumECS
-An experimental C++ ECS library which makes heavy usage of C++11 variadic templates and template metaprogramming to provide a type safe, data-oriented and ownership-based component system, developed with usage in games in mind.
+An experimental C++ ECS library which makes heavy usage of C++11 variadic templates and template metaprogramming to provide a type safe, data-oriented and ownership-based component system, developed with usage in games as its focus.
 
 Its functionality is split over 3 parts:
 * Components - Small groups of related data, with no actual logic (other than copy or move operations if necessary)
@@ -20,7 +20,7 @@ Its functionality is split over 3 parts:
 ### Comparisons
 
 # Pending Work
-* Multi-threading support (at the moment, some parts of World, such as ID generation, are not threadsafe)
+* Finish multithreading support (at the moment, some parts of World, such as ID generation, are not threadsafe)
 * Review and stabilize World API
 * Split World.h
 * Make this into a header only library
