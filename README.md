@@ -24,6 +24,9 @@ Its functionality is split over 3 parts:
 * Review and stabilize World API
 * Split World.h
 * Make this into a header only library
+* Add a template system
+* Add event hooks (OnEntityAdded and OnEntityRemoved for example)
+* Support user defined logging
 
 # Dependencies
 * variadic-variant (https://github.com/kmicklas/variadic-variant) - A type safe, C++11 based variant library, used for the component actions structure.
