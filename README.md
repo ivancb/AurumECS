@@ -1,5 +1,5 @@
 # AurumECS
-An experimental C++ ECS library which makes heavy usage of C++11 variadic templates and template metaprogramming to provide a type safe, data-oriented and ownership-based component system.
+An experimental C++ ECS library which makes heavy usage of C++11 variadic templates and template metaprogramming to provide a type safe, data-oriented and ownership-based component system, developed with usage in games in mind.
 
 Its functionality is split over 3 parts:
 * Components - Small groups of related data, with no actual logic (other than copy or move operations if necessary)
@@ -7,13 +7,14 @@ Its functionality is split over 3 parts:
 * Worlds - Contain the components and processes, while providing an ownership-based method of iterating over components
 
 ### Advantages
-* The double buffered component container design and the ownership-based iteration of components allows for improvements in terms of thread safety and makes the relationship between a process, the data it requires to function and the data it modifies explicit.
-* Easy to define new components and processes.
+* Double buffered components - allows processes to both read and write to the same component, at the same time.
+* Ownership-based iterator design - ensures that multiple processes can't write to the same component, at the same time, making the relationship between a process, the data it requires to function and the data it modifies explicit.
+* Easy to define and use new components and processes.
 * Data-oriented design allows for better cache usage by components.
 * Focus on eliminating virtual calls within World (however, an IWorld interface exists, which contains mostly unsafe operations).
 
 ### Disadvantages
-* Higher memory usage
+* Higher memory usage (in an ideal scenario, roughly twice of most ECS systems due to the double buffered component containers)
 * Complexity when dealing with processes that interact with a large amount of components or Worlds with a large number of component containers.
 
 ### Comparisons
