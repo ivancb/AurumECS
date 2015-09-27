@@ -13,22 +13,23 @@ Its functionality is split over 3 parts:
 * Data-oriented design allows for better cache usage by components.
 * Focus on eliminating virtual calls within World (however, an IWorld interface exists, which contains mostly unsafe operations).
 
-### Disadvantages
+### Drawbacks
 * Higher memory usage (in an ideal scenario, roughly twice of most ECS systems due to the double buffered component containers)
 * Complexity when dealing with processes that interact with a large amount of components or Worlds with a large number of component containers.
 
 ### Comparisons
 
 # Pending Work
-* Finish multithreading support (at the moment, some parts of World, such as ID generation, are not threadsafe)
 * Review and stabilize World API
-* Split World.h
+* Finish multithreading support (at the moment, some parts of World, such as ID generation, are not threadsafe)
+* Split World.h into more manageable chunks
 * Make this into a header only library
 * Add a template system
 * Add event hooks (OnEntityAdded and OnEntityRemoved for example)
 * Support user defined logging
 
-# Dependencies
+# Dependencies and requirements
+* A C++11 compiler with support for variadic templates
 * variadic-variant (https://github.com/kmicklas/variadic-variant) - A type safe, C++11 based variant library, used for the component actions structure.
 
 # Documentation
@@ -37,3 +38,4 @@ Coming soon, see Examples for now.
 # Examples
 * basic.cpp - Demonstrates basic ECS functionality.
 * basic_shared_authority.cpp - Demonstrates how two or more processes can modify the same component simultaneously.
+* mt_experimental.cpp - Example of how to use a MultithreadedDispatcher to parallelize process execution.
