@@ -105,7 +105,7 @@ namespace au {
 	template<typename... ComponentTypes>
 	class EntityTemplateManager;
 
-	template<typename... ComponentTypes>
+	template<typename DispatcherType, typename... ComponentTypes>
 	class World : public IWorld {
 		struct ProcessData {
 			IProcess* Process;
@@ -157,6 +157,7 @@ namespace au {
 
 		AuthorityData mAuthorityExists[sizeof...(ComponentTypes)];
 		bool mProcessing = false;
+		DispatcherType mDispatcher;
 
 		Metrics mMetrics;
 		void* mUserPtr = nullptr;
@@ -704,14 +705,16 @@ namespace au {
 
 			// Execute processes
 			start_time = std::chrono::high_resolution_clock::now();
+			mDispatcher.SetTime(timeSec);
 			for (auto& procgroup : mProcessGroups)
 			{
 				for (auto& procdata : procgroup)
 				{
 					if (procdata.Enabled && GetProcessGroupEnabled(procdata.Process->GetProcessGroupId()))
-						procdata.Process->Execute(timeSec);
+						mDispatcher.Schedule(procdata.Process);
 				}
 
+				mDispatcher.Execute();
 				memset(mAuthorityExists, 0, sizeof(mAuthorityExists));
 			}
 
