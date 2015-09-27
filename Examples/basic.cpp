@@ -2,6 +2,7 @@
 #include <ECS/World.h>
 #include <ECS/ComponentId.h>
 #include <ECS/IProcess.h>
+#include <ECS/SinglethreadedDispatcher.h>
 
 using namespace au;
 
@@ -24,25 +25,25 @@ struct TransformComponent {
 };
 
 // Game world type alias, useful for processes
-using GameWorld = World<TransformComponent>;
+using GameWorld = World<SingleThreadedDispatcher, TransformComponent>;
 
 // We're defining two processes which will be capable of running at the same time
 // one will simply print the object positions while the other will update them
 
 // NOTE: This macro's only meant for examples
-#define COMPONENT_BOILERPLATE(proc_type_id) inline double TimeTaken() const override { return 0.0; } \
+#define PROCESS_BOILERPLATE(proc_type_id) inline double TimeTaken() const override { return 0.0; } \
 	inline size_t GetProcessTypeId() const override { return proc_type_id; } \
 	inline size_t GetProcessGroupId() const override { return 0; } \
 	static const size_t ProcessTypeId = proc_type_id; \
 	static const size_t ProcessGroupId = 0
 
-class TransformPrintProcess : public IProcess {
+class TransformUpdateProcess : public IProcess {
 private:
 	GameWorld* mOwner;
 public:
-	COMPONENT_BOILERPLATE(0);
+	PROCESS_BOILERPLATE(0);
 
-	TransformPrintProcess(GameWorld* owner) : mOwner(owner)
+	TransformUpdateProcess(GameWorld* owner) : mOwner(owner)
 	{
 	}
 
@@ -60,13 +61,13 @@ public:
 	}
 };
 
-class TransformUpdateProcess : public IProcess {
+class TransformPrintProcess : public IProcess {
 private:
 	GameWorld* mOwner;
 public:
-	COMPONENT_BOILERPLATE(0);
+	PROCESS_BOILERPLATE(1);
 
-	TransformUpdateProcess(GameWorld* owner) : mOwner(owner)
+	TransformPrintProcess(GameWorld* owner) : mOwner(owner)
 	{
 	}
 
