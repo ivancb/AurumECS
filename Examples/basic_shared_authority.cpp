@@ -37,8 +37,11 @@ struct TransformComponent {
 // Game world type alias, useful for processes
 using GameWorld = World<SingleThreadedDispatcher, TransformComponent>;
 
-// We're defining two processes which will be capable of running at the same time
-// one will simply print the object positions while the other will update them
+// We're defining three processes which will be capable of running at the same time.
+// One will print the transform data while the other two will operate on the same transform
+// without requiring any sort of synchronization primitives. One updates the rotation
+// while the other updates the position.
+// The downside to this system is that the user must ensure that he knows what he's doing.
 
 // Note: This macro's only meant for examples
 #define PROCESS_BOILERPLATE(proc_type_id) inline double TimeTaken() const override { return 0.0; } \
@@ -47,6 +50,8 @@ using GameWorld = World<SingleThreadedDispatcher, TransformComponent>;
 	static const size_t ProcessTypeId = proc_type_id; \
 	static const size_t ProcessGroupId = 0
 
+// This key is shared between both of the update processes, indicating to the ECS world that it's safe
+// to allow processes using this key to run in the same process set concurrently.
 static int Key = 15123931;
 
 class TransformUpdateProcess : public IProcess {
