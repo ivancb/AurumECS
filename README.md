@@ -21,6 +21,8 @@ Its functionality is split over 3 parts:
 
 # Pending Work
 * Review and stabilize World API
+* Add unit tests
+* Improvement performance of component iteration
 * Finish multithreading support (at the moment, some parts of World, such as ID generation, are not threadsafe)
 * Split World.h into more manageable chunks
 * Make this into a header only library
