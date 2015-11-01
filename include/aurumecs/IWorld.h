@@ -1,14 +1,12 @@
 #pragma once
-#include "Entity.h"
 
 namespace au {
+	struct EntityRef;
 	class IProcess;
 
 	class IWorld {
 	public:
-		virtual ~IWorld()
-		{
-		}
+		virtual ~IWorld() {}
 
 		// Entities
 		virtual EntityRef AddEntity() = 0;
@@ -39,6 +37,7 @@ namespace au {
 
 		virtual void Process(double timeSec) = 0;
 
+		// Support for userdata
 		virtual void* GetUserPointer() const = 0;
 		virtual void SetUserPointer(void*) = 0;
 	};
