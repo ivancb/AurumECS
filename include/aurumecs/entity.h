@@ -8,7 +8,7 @@ namespace au {
 	static const size_t kInvalidEntityIndex = 0xFFFFFFFF;
 
 	template<size_t componentCount>
-	struct Entity {
+	struct EntityBase {
 		size_t Guid;
 		size_t Index;
 		int UserValue;
@@ -78,10 +78,10 @@ namespace au {
 	};
 
 #define AUENT_IS_SAME_TYPE(x, y) std::is_same<decltype(x), decltype(y)>::value
-	static_assert(AUENT_IS_SAME_TYPE(Entity<1>::Guid, EntityRef::Guid), "Entity and EntityRef Guid must use the same GUID type");
-	static_assert(AUENT_IS_SAME_TYPE(Entity<1>::Index, EntityRef::Index), "Entity and EntityRef Guid must use the same Index type");
+	static_assert(AUENT_IS_SAME_TYPE(EntityBase<1>::Guid, EntityRef::Guid), "EntityBase and EntityRef Guid must use the same GUID type");
+	static_assert(AUENT_IS_SAME_TYPE(EntityBase<1>::Index, EntityRef::Index), "EntityBase and EntityRef Guid must use the same Index type");
 #undef AUENT_IS_SAME_TYPE
 
-	static_assert(std::is_pod<Entity<1>>::value, "Entity must be POD");
+	static_assert(std::is_pod<EntityBase<1>>::value, "EntityBase must be POD");
 	static_assert(std::is_pod<EntityRef>::value, "EntityRef must be POD");
 }

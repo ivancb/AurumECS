@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <chrono>
 #include <cassert>
-#include <Variant.h>
+#include <variant.h>
 #include "iworld.h"
 #include "iprocess.h"
 #include "entity.h"
@@ -22,7 +22,7 @@ namespace au {
 			size_t index;
 			size_t removeLength;
 
-			Entity<sizeof...(ComponentTypes)> owner;
+			EntityBase<sizeof...(ComponentTypes)> owner;
 			variant<ComponentTypes..., RemovalAction> data;
 			bool destructive;
 		};
@@ -100,10 +100,7 @@ namespace au {
 		}
 	};
 
-	// Forward decs
-	template<typename... ComponentTypes>
-	class EntityTemplateManager;
-
+	// Core class of the ECS, contains Entities, Components and Processes
 	template<typename DispatcherType, typename... ComponentTypes>
 	class World : public IWorld {
 		struct ProcessData {
@@ -115,9 +112,8 @@ namespace au {
 			void* RequestSource;
 		};
 	public:
-		using entity_type = Entity<sizeof...(ComponentTypes)>;
-		using TemplateManagerType = EntityTemplateManager<ComponentTypes...>;
-		using Metrics = WorldMetrics<sizeof...(ComponentTypes)>;
+		using EntityType = EntityBase<sizeof...(ComponentTypes)>;
+		using MetricsType = WorldMetrics<sizeof...(ComponentTypes)>;
 	private:
 		using ComponentAction = detail::ComponentChangeInfo<ComponentTypes...>;
 		using ComponentStorage = std::tuple<ComponentContainer<ComponentTypes>...>;
@@ -129,7 +125,6 @@ namespace au {
 		struct RequestAuthority;
 
 		friend QueueRemoval;
-		friend SwapBuffers;
 		friend AddPendingComponents;
 		friend RequestAuthority;
 
@@ -140,11 +135,11 @@ namespace au {
 			return guid++;
 		}
 
-		std::vector<entity_type> AvailableEntities;
-		std::vector<entity_type> mEntities;
-		std::vector<entity_type> mPendingEntityAdditions;
-		std::vector<entity_type> mPendingEntityRemovals;
-		mutable std::vector<entity_type> mEntitySearchList;
+		std::vector<EntityType> AvailableEntities;
+		std::vector<EntityType> mEntities;
+		std::vector<EntityType> mPendingEntityAdditions;
+		std::vector<EntityType> mPendingEntityRemovals;
+		mutable std::vector<EntityType> mEntitySearchList;
 		mutable bool mEntitySearchListValid = false;
 
 		ComponentStorage mComponents;
@@ -158,7 +153,7 @@ namespace au {
 		bool mProcessing = false;
 		DispatcherType mDispatcher;
 
-		Metrics mMetrics;
+		MetricsType mMetrics;
 		void* mUserPtr = nullptr;
 	public:
 		World()
@@ -183,7 +178,7 @@ namespace au {
 		World(World&&) = delete;
 		World& operator=(World const&) = delete;
 
-		Metrics GetMetrics() const
+		inline MetricsType GetMetrics() const
 		{
 			return mMetrics;
 		}
@@ -196,7 +191,7 @@ namespace au {
 			}
 			else
 			{
-				entity_type ent;
+				EntityType ent;
 
 				if (!AvailableEntities.empty())
 				{
@@ -227,7 +222,7 @@ namespace au {
 			}
 			else
 			{
-				entity_type ent;
+				EntityType ent;
 				ent.UserValue = userValue;
 
 				if (!AvailableEntities.empty())
@@ -253,7 +248,7 @@ namespace au {
 
 		EntityRef QueueAddEntity()
 		{
-			entity_type ent;
+			EntityType ent;
 			if (!AvailableEntities.empty())
 			{
 				ent = AvailableEntities.back();
@@ -273,7 +268,7 @@ namespace au {
 
 		bool RemoveEntity(EntityRef ent) override
 		{
-			const entity_type* fent = FindEntityPtr(ent.Guid);
+			const EntityType* fent = FindEntityPtr(ent.Guid);
 
 			if (fent != nullptr)
 			{
@@ -340,7 +335,7 @@ namespace au {
 			foreach_tuple_element(mComponents, AddPendingComponents(this));
 			mPendingComponentActions.clear();
 			memset(mComponentCountDelta, 0, sizeof(mComponentCountDelta));
-			foreach_tuple_element(mComponents, SwapBuffers(this));
+			foreach_tuple_element(mComponents, SwapBuffers());
 
 			// Execute the pending updates on the destination
 			std::sort(destination->mPendingComponentActions.begin(), destination->mPendingComponentActions.end(), [](const ComponentAction& lhs, const ComponentAction& rhs)
@@ -351,7 +346,7 @@ namespace au {
 			foreach_tuple_element(destination->mComponents, AddPendingComponents(this));
 			destination->mPendingComponentActions.clear();
 			memset(destination->mComponentCountDelta, 0, sizeof(mComponentCountDelta));
-			foreach_tuple_element(destination->mComponents, SwapBuffers(this));
+			foreach_tuple_element(destination->mComponents, SwapBuffers());
 
 			for (auto& entity : performed_migrations)
 				foreach_tuple_element(destination->mComponents, ComponentMigrationNotifier(destination, destination->FindEntityPtr(entity.Guid)));
@@ -385,14 +380,14 @@ namespace au {
 				throw std::out_of_range("index exceeds entity count");
 			else
 			{
-				entity_type ent = mEntities[idx];
+				EntityType ent = mEntities[idx];
 				return{ ent.Guid, ent.Index, (IWorld*)this, ent.UserValue };
 			}
 		}
 
 		EntityRef FindEntity(size_t guid) const override
 		{
-			const entity_type* fent = FindEntityPtr(guid);
+			const EntityType* fent = FindEntityPtr(guid);
 
 			if (fent)
 				return{ fent->Guid, fent->Index, (IWorld*)this, fent->UserValue };
@@ -402,7 +397,7 @@ namespace au {
 
 		EntityRef FindEntityExt(size_t guid) const override
 		{
-			const entity_type* fent = FindEntityPtrExt(guid);
+			const EntityType* fent = FindEntityPtrExt(guid);
 
 			if (fent)
 				return{ fent->Guid, fent->Index, (IWorld*)this, fent->UserValue };
@@ -459,7 +454,7 @@ namespace au {
 			data.OwnerIndex = entp->Index;
 
 			ComponentAction action = {
-				std::distance(buffer.begin(), it),
+				(size_t) std::distance(buffer.begin(), it),
 				0,
 				*entp,
 				data,
@@ -682,7 +677,7 @@ namespace au {
 			auto start_time = std::chrono::high_resolution_clock::now();
 
 			mProcessing = true;
-			memset(&mMetrics, 0, sizeof(Metrics));
+			memset(&mMetrics, 0, sizeof(MetricsType));
 
 			// Update Entities
 			ExecuteQueuedEntityActions();
@@ -728,7 +723,7 @@ namespace au {
 
 			// Housekeeping
 			start_time = std::chrono::high_resolution_clock::now();
-			tuple_for_each(mComponents, SwapBuffers(this));
+			tuple_for_each(mComponents, SwapBuffers());
 
 			for (auto& entity : mEntities)
 				memcpy(entity.ComponentCount, entity.InternalComponentCount, sizeof(entity.InternalComponentCount));
@@ -751,68 +746,68 @@ namespace au {
 		struct ComponentIterator {
 		private:
 			template<bool editable>
-			inline typename std::enable_if<editable, bool>::type GetNumComponents(const entity_type& ent, std::size_t component_index)
+			inline typename std::enable_if<editable, bool>::type GetNumComponents(const EntityType& ent, std::size_t component_index)
 			{
 				return ent.InternalComponentCount[component_index];
 			}
 
 			template<bool editable>
-			inline typename std::enable_if<!editable, bool>::type GetNumComponents(const entity_type& ent, std::size_t component_index)
+			inline typename std::enable_if<!editable, bool>::type GetNumComponents(const EntityType& ent, std::size_t component_index)
 			{
 				return ent.ComponentCount[component_index];
 			}
 
-			inline bool CheckComponentPresence(const entity_type& ent, std::size_t component_index)
+			inline bool CheckComponentPresence(const EntityType& ent, std::size_t component_index)
 			{
 				return (ent.ComponentCount[component_index] > 0);
 			}
 
 			template <typename TypeSeq>
-			inline typename std::enable_if<TypeSeq::is_last, bool>::type HasComponentsImpl(const entity_type& ent)
+			inline typename std::enable_if<TypeSeq::is_last, bool>::type HasComponentsImpl(const EntityType& ent)
 			{
 				return CheckComponentPresence(ent, ComponentsTypeTuple::index_of<typename TypeSeq::head>::value);
 			}
 
 			template <typename TypeSeq>
-			inline typename std::enable_if<!TypeSeq::is_last, bool>::type HasComponentsImpl(const entity_type& ent)
+			inline typename std::enable_if<!TypeSeq::is_last, bool>::type HasComponentsImpl(const EntityType& ent)
 			{
 				return CheckComponentPresence(ent, ComponentsTypeTuple::index_of<typename TypeSeq::head>::value) && 
 					HasComponentsImpl<TypeSeq::tail>(ent);
 			}
 
 			template <typename CompSet>
-			inline typename std::enable_if<CompSet::count != 0, bool>::type HasComponents(const entity_type& ent)
+			inline typename std::enable_if<CompSet::count != 0, bool>::type HasComponents(const EntityType& ent)
 			{
 				return HasComponentsImpl<CompSet::as_type_seq>(ent);
 			}
 
 			template <typename CompSet>
-			inline typename std::enable_if<CompSet::count == 0, bool> ::type HasComponents(const entity_type& ent)
+			inline typename std::enable_if<CompSet::count == 0, bool> ::type HasComponents(const EntityType& ent)
 			{
 				return true;
 			}
 
 			template <typename TypeSeq, bool editable>
-			inline typename std::enable_if<TypeSeq::is_last, bool>::type HasAnyComponentsImpl(const entity_type& ent)
+			inline typename std::enable_if<TypeSeq::is_last, bool>::type HasAnyComponentsImpl(const EntityType& ent)
 			{
 				return (GetNumComponents<editable>(ent, ComponentsTypeTuple::index_of<typename TypeSeq::head>::value) > 0);
 			}
 
 			template <typename TypeSeq, bool editable>
-			inline typename std::enable_if<!TypeSeq::is_last, bool>::type HasAnyComponentsImpl(const entity_type& ent)
+			inline typename std::enable_if<!TypeSeq::is_last, bool>::type HasAnyComponentsImpl(const EntityType& ent)
 			{
 				return (GetNumComponents<editable>(ent, ComponentsTypeTuple::index_of<typename TypeSeq::head>::value) > 0) ||
 					HasAnyComponentsImpl<TypeSeq::tail, editable>(ent);
 			}
 
 			template <typename CompSet, bool editable>
-			inline typename std::enable_if<CompSet::count != 0, bool>::type HasAnyComponents(const entity_type& ent)
+			inline typename std::enable_if<CompSet::count != 0, bool>::type HasAnyComponents(const EntityType& ent)
 			{
 				return HasAnyComponentsImpl<CompSet::as_type_seq, editable>(ent);
 			}
 
 			template <typename CompSet, bool editable>
-			inline typename std::enable_if<CompSet::count == 0, bool>::type HasAnyComponents(const entity_type& ent)
+			inline typename std::enable_if<CompSet::count == 0, bool>::type HasAnyComponents(const EntityType& ent)
 			{
 				return true;
 			}
@@ -835,14 +830,14 @@ namespace au {
 			{
 			}
 
-			bool SeekTo(entity_type entity)
+			bool SeekTo(EntityType entity)
 			{
 				mOwner->mEntities[entity.Index]
 			}
 
 			bool Advance()
 			{
-				entity_type cent;
+				EntityType cent;
 
 				do
 				{
@@ -1069,8 +1064,8 @@ namespace au {
 			enforceRet(!destination->mProcessing, EntityRef::Invalid);
 
 			// Migrate the entity
-			entity_type& source_entity = mEntities[migrated_entity.Index];
-			entity_type ent = source_entity;
+			EntityType& source_entity = mEntities[migrated_entity.Index];
+			EntityType ent = source_entity;
 
 			enforceRet(source_entity.Guid != kInvalidEntityGuid, EntityRef::Invalid);
 
@@ -1101,7 +1096,7 @@ namespace au {
 			memset(source_entity.InternalComponentCount, 0, sizeof(source_entity.InternalComponentCount));
 
 			AvailableEntities.push_back(source_entity);
-			memset(&source_entity, 0, sizeof(entity_type));
+			memset(&source_entity, 0, sizeof(EntityType));
 			source_entity.Guid = kInvalidEntityGuid;
 			source_entity.Index = kInvalidEntityIndex;
 
@@ -1325,7 +1320,7 @@ namespace au {
 
 		/// Attempts to find an entity that has the specified GUID in the
 		/// current entities vector by using binary search.
-		const entity_type* FindEntityPtr(size_t guid) const
+		const EntityType* FindEntityPtr(size_t guid) const
 		{
 			auto ent = FindFirstEntity(guid);
 
@@ -1339,7 +1334,7 @@ namespace au {
 
 		/// Attempts to find an entity that has the specified GUID in the
 		/// current entities vector by using binary search.
-		entity_type* FindEntityPtr(size_t guid)
+		EntityType* FindEntityPtr(size_t guid)
 		{
 			auto ent = FindFirstEntity(guid);
 
@@ -1353,9 +1348,9 @@ namespace au {
 
 		/// Searches for an entity by using binary search to search the current entities vector. 
 		/// If the entity's not found it then attempts to search on the pending additions.
-		const entity_type* FindEntityPtrExt(size_t guid) const
+		const EntityType* FindEntityPtrExt(size_t guid) const
 		{
-			if (const entity_type* ret = FindEntityPtr(guid))
+			if (const EntityType* ret = FindEntityPtr(guid))
 			{
 				return ret;
 			}
@@ -1373,9 +1368,9 @@ namespace au {
 
 		/// Searches for an entity by using binary search to search the current entities vector. 
 		/// If the entity's not found it then attempts to search on the pending additions.
-		entity_type* FindEntityPtrExt(size_t guid)
+		EntityType* FindEntityPtrExt(size_t guid)
 		{
-			if (entity_type* ret = FindEntityPtr(guid))
+			if (EntityType* ret = FindEntityPtr(guid))
 			{
 				return ret;
 			}
@@ -1395,7 +1390,7 @@ namespace au {
 		{
 			for (auto&& remove : mPendingEntityRemovals)
 			{
-				entity_type* ent = FindEntityPtr(remove.Guid);
+				EntityType* ent = FindEntityPtr(remove.Guid);
 
 				if (ent)
 				{
@@ -1415,7 +1410,7 @@ namespace au {
 					memset(ent->InternalComponentCount, 0, sizeof(ent->InternalComponentCount));
 
 					AvailableEntities.push_back(*ent);
-					memset(ent, 0, sizeof(entity_type));
+					memset(ent, 0, sizeof(EntityType));
 					ent->Guid = kInvalidEntityGuid;
 					ent->Index = kInvalidEntityIndex;
 				}
@@ -1444,16 +1439,16 @@ namespace au {
 			if (!mEntitySearchListValid)
 			{
 				struct EntityGuidSortComparator {
-					bool operator()(const entity_type& lhs, const entity_type& rhs) const
+					bool operator()(const EntityType& lhs, const EntityType& rhs) const
 					{
 						return lhs.Guid < rhs.Guid;
 					}
 				};
 
 				mEntitySearchList.resize(mEntities.size());
-				memcpy(mEntitySearchList.data(), mEntities.data(), mEntities.size() * sizeof(entity_type));
+				memcpy(mEntitySearchList.data(), mEntities.data(), mEntities.size() * sizeof(EntityType));
 				std::sort(mEntitySearchList.begin(), mEntitySearchList.end(), EntityGuidSortComparator());
-				mEntitySearchList.erase(std::remove_if(mEntitySearchList.begin(), mEntitySearchList.end(), [](const entity_type& ent)
+				mEntitySearchList.erase(std::remove_if(mEntitySearchList.begin(), mEntitySearchList.end(), [](const EntityType& ent)
 				{
 					return ent.Guid == kInvalidEntityGuid;
 				}), mEntitySearchList.end());
@@ -1461,7 +1456,7 @@ namespace au {
 				mEntitySearchListValid = true;
 			}
 
-			std::vector<entity_type>::iterator it;
+			std::vector<EntityType>::iterator it;
 			auto first = mEntitySearchList.begin();
 			auto last = mEntitySearchList.end();
 			size_t count, step;
@@ -1484,7 +1479,7 @@ namespace au {
 		}
 
 		template<typename T>
-		auto FindFirstComponentBelongingToEntity(T& container, const entity_type& value) const -> decltype(container.begin())
+		auto FindFirstComponentBelongingToEntity(T& container, const EntityType& value) const -> decltype(container.begin())
 		{
 			auto first = container.begin();
 			auto last = container.end();
@@ -1512,7 +1507,7 @@ namespace au {
 		}
 
 		template<typename T>
-		auto FindLastComponentBelongingToEntity(T& container, const entity_type& value) const -> decltype(container.begin())
+		auto FindLastComponentBelongingToEntity(T& container, const EntityType& value) const -> decltype(container.begin())
 		{
 			auto first = container.begin();
 			auto last = container.end();
@@ -1543,10 +1538,10 @@ namespace au {
 		class QueueRemoval {
 		private:
 			World* mOwner;
-			entity_type mTargetEntity;
+			EntityType mTargetEntity;
 			bool mDestructive;
 		public:
-			QueueRemoval(World* ecs, entity_type entity, bool destructive = true)
+			QueueRemoval(World* ecs, EntityType entity, bool destructive = true)
 				: mOwner(ecs), mTargetEntity(entity), mDestructive(destructive)
 			{
 			}
@@ -1567,8 +1562,8 @@ namespace au {
 					auto end = mOwner->FindLastComponentBelongingToEntity(srcBuff, mTargetEntity);
 
 					ComponentAction removalAction = {
-						std::distance(srcBuff.begin(), start),
-						std::distance(start, end),
+						(size_t) std::distance(srcBuff.begin(), start),
+						(size_t) std::distance(start, end),
 						mTargetEntity,
 						detail::RemovalAction{ CompTypeD::Id() },
 						mDestructive,
@@ -1584,11 +1579,11 @@ namespace au {
 		private:
 			World* mSource;
 			World* mDestination;
-			entity_type mSourceEntity;
+			EntityType mSourceEntity;
 			EntityRef mDestinationEntity;
 			std::vector<EntityRef>* mInheritedMigrations;
 		public:
-			ComponentMigrator(World* source, World* destination, entity_type source_entity, entity_type destination_entity, std::vector<EntityRef>* inherit_migrations)
+			ComponentMigrator(World* source, World* destination, EntityType source_entity, EntityType destination_entity, std::vector<EntityRef>* inherit_migrations)
 				: mSource(source), mDestination(destination), mSourceEntity(source_entity), mInheritedMigrations(inherit_migrations)
 			{
 				mDestinationEntity = EntityRef{ destination_entity.Guid, destination_entity.Index, destination, destination_entity.UserValue };
@@ -1632,9 +1627,9 @@ namespace au {
 		class ComponentMigrationNotifier {
 		private:
 			World* mWorld;
-			entity_type* mEntity;
+			EntityType* mEntity;
 		public:
-			ComponentMigrationNotifier(World* world, entity_type* entity)
+			ComponentMigrationNotifier(World* world, EntityType* entity)
 				: mWorld(world), mEntity(entity)
 			{
 			}
@@ -1667,16 +1662,10 @@ namespace au {
 				}
 			}
 		};
-		class SwapBuffers {
-		private:
-			World* mOwner;
-		public:
-			SwapBuffers(World* owner) : mOwner(owner)
-			{
-			}
 
+		struct SwapBuffers {
 			template<typename T>
-			void operator()(T&& v)
+			inline void operator()(T&& v)
 			{
 				std::swap(v.PresentBuffer, v.FutureBuffer);
 			}
@@ -1726,7 +1715,7 @@ namespace au {
 								copyDestStart += toCopy;
 							}
 
-							entity_type* owner = mOwner->FindEntityPtrExt(action.owner.Guid);
+							EntityType* owner = mOwner->FindEntityPtrExt(action.owner.Guid);
 							if (owner)
 								owner->InternalComponentCount[ComponentsTypeTuple::index_of<CompTypeD>::value] -= (unsigned char) action.removeLength;
 
@@ -1739,7 +1728,7 @@ namespace au {
 					if (action.data.which() != ComponentsTypeTuple::index_of<CompTypeD>::value)
 						continue;
 
-					entity_type* owner = mOwner->FindEntityPtrExt(action.owner.Guid);
+					EntityType* owner = mOwner->FindEntityPtrExt(action.owner.Guid);
 					if (owner)
 					{
 						if ((action.index - copyOrigStart) > 0)
@@ -1858,10 +1847,9 @@ namespace au {
 			}
 		};
 
-		class DestroyComponents {
-		public:
+		struct DestroyComponents {
 			template<typename T>
-			void operator()(T&& v)
+			inline void operator()(T&& v)
 			{
 				for (auto& comp : v.PresentBuffer)
 					comp.Destroy();

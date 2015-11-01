@@ -6,36 +6,25 @@
 #include "iprocess.h"
 
 namespace au {
+	// A dispatcher that executes processes over (NumThreads + 1) threads.
+	// Note that using this with very small worlds and short processes may
+	// lead to slowdowns since there's a slight overhead.
 	template<int NumThreads>
 	class MultiThreadedDispatcher {
 		static_assert(NumThreads > 0, "Must use more at least two threads (including the spawning thread) for a MultiThreadedDispatcher");
 		static_assert(NumThreads < 32, "Probably a bad idea to use more than 32 threads in a MultiThreadedDispatcher");
 	private:
-		// Note: This is a slight hack; atomics are not copy-constructible (and for good reason).
-		// However, in this situation, we don't particularly care about vector resizing being
-		// kinda unsafe with multiple threads since adding/removing stuff will only happen in the
-		// main thread.
-		// So, this wrapper lets us stick atomics in a vector.
+		// Note: This is a slight hack since atomics are not copy-constructible/copy-assignable (and for good reason).
+		// The wrapper just lets us contain atomics in an std::vector. This usage is safe since in this situation
+		// the copy constructor is only being called when the secondary threads are yielding.
 		template <typename T>
 		struct AtomicCopyWrapper {
 			T a;
 
-			AtomicCopyWrapper() : a()
-			{
-			}
-
-			AtomicCopyWrapper(const T &a) : a(a.load())
-			{
-			}
-
-			AtomicCopyWrapper(const AtomicCopyWrapper &rhs) : a(rhs.a.load())
-			{
-			}
-
-			AtomicCopyWrapper &operator=(const AtomicCopyWrapper &rhs)
-			{
-				a.store(rhs.a.load());
-			}
+			AtomicCopyWrapper() : a() { }
+			AtomicCopyWrapper(const T &a) : a(a.load()) { }
+			AtomicCopyWrapper(const AtomicCopyWrapper &rhs) : a(rhs.a.load()) { }
+			AtomicCopyWrapper &operator=(const AtomicCopyWrapper &rhs) { a.store(rhs.a.load()); }
 		};
 
 		struct ScheduledProcess {
@@ -70,7 +59,6 @@ namespace au {
 		MultiThreadedDispatcher(const MultiThreadedDispatcher&) = delete;
 		MultiThreadedDispatcher(MultiThreadedDispatcher&&) = delete;
 		MultiThreadedDispatcher& operator=(const MultiThreadedDispatcher&) = delete;
-
 
 		inline void Schedule(IProcess* process)
 		{
