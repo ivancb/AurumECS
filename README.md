@@ -5,14 +5,14 @@ AurumECS is an experimental header-only C++ library which makes heavy usage of v
 * Double buffered components which allow processes to read and write to the same component at the same time.
 * Ownership-based iterator design which makes the relationship between a process and the data it requires to function and modifies explicit. This also prevents multiple processes from writing to the same component at the same time (unless the user provides assurances that it is safe, see [shared authority] for an example).
 * Data-oriented - components are just POD with some helper functions.
-* Support for multithreaded World processing and updates
-* Builtin timing for each step during a World's update.
+* Support for multithreaded world updates.
+* Builtin timing for each step performed during world ticks.
 * Header-only - simply add the include directory in your project's include paths and it's ready to use.
 
 Note that due to its design it also has a higher memory usage than other ECS systems and is slightly more complex when dealing with large amount of components.
 
 ## Requirements
-* C++11 compiler (tested with Visual Studio 2015)
+* A C++11 compiler (tested with Visual Studio 2015)
 * variadic-variant (https://github.com/kmicklas/variadic-variant) - A type safe, C++11 based variant library, used for the component actions structure.
 
 ## Documentation
@@ -27,13 +27,13 @@ A Visual Studio 2015 solution with examples is available under [Examples].
 ## Pending Work
 * Review and stabilize World API
 * Add unit tests
+* Add support for specifying that components don't need to be destroyed
+* Add an entity templating system
+* Add event hooks (OnEntityAdded and OnEntityRemoved for example)
 * Improvement performance of component iteration
 * Improve multithreading support and indicate which parts are threadsafe
 * Split World.h into more manageable chunks
-* Add a template system
-* Add event hooks (OnEntityAdded and OnEntityRemoved for example)
-* Support user logging
-* Add support for specifying that components don't need to be destroyed
+* Add support for user logging
 
 [basic]: ./examples/basic.cpp
 [shared authority]: ./examples/basic_shared_authority.cpp
