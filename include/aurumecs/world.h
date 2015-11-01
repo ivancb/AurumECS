@@ -49,6 +49,20 @@ namespace au {
 		}
 	};
 
+	class ComponentMigrationFailureException : public std::runtime_error {
+	private:
+		std::size_t mComponentId;
+		std::size_t mEntityGuid;
+	public:
+		ComponentMigrationFailureException(std::size_t component_id, std::size_t entity_guid)
+			: std::runtime_error("Could not migrate component for entity"), mComponentId(component_id), mEntityGuid(entity_guid)
+		{
+		}
+
+		inline size_t component_id() const { return mComponentId; }
+		inline size_t entity_guid() const { return mEntityGuid; }
+	};
+
 	template<typename... T>
 	using ComponentSet = type_tuple < T... > ;
 
@@ -337,11 +351,10 @@ namespace au {
 			for (auto& entity : performed_migrations)
 				tuple_for_each(destination->mComponents, ComponentMigrationNotifier(destination, destination->FindEntityPtr(entity.Guid)));
 
-			Log::Trace(CODELOC, "Migrated entity ", destination_entity.Guid, " from world ", (int) this, " to ", (int) destination);
 			return destination_entity;
 		}
 
-		void ReserveEntities(size_t count) override
+		inline void ReserveEntities(size_t count) final
 		{
 			if (AvailableEntities.size() < count)
 			{
@@ -350,17 +363,17 @@ namespace au {
 			}
 		}
 
-		size_t CountEntities() const override
+		inline size_t CountEntities() const final
 		{
 			return mEntities.size() - AvailableEntities.size();
 		}
 
-		size_t CountPendingEntities() const
+		inline size_t CountPendingEntities() const
 		{
 			return mPendingEntityAdditions.size() - mPendingEntityRemovals.size();
 		}
 
-		EntityRef GetEntity(size_t idx) const override
+		inline EntityRef GetEntity(size_t idx) const final
 		{
 			if (idx >= mEntities.size())
 				throw std::out_of_range("index exceeds entity count");
@@ -371,7 +384,7 @@ namespace au {
 			}
 		}
 
-		EntityRef FindEntity(size_t guid) const override
+		inline EntityRef FindEntity(size_t guid) const final
 		{
 			const EntityType* fent = FindEntityPtr(guid);
 
@@ -381,7 +394,7 @@ namespace au {
 				return EntityRef::InvalidRef();
 		}
 
-		EntityRef FindEntityExt(size_t guid) const override
+		inline EntityRef FindEntityExt(size_t guid) const final
 		{
 			const EntityType* fent = FindEntityPtrExt(guid);
 
@@ -391,16 +404,13 @@ namespace au {
 				return EntityRef::InvalidRef();
 		}
 
-		/// Verifies the specified entity's validity and if it is contained within the current entity vector.
-		/// 
-		bool IsValid(EntityRef entity) const override
+		// Verifies the specified entity's validity and if it is contained within the current entity vector.
+		inline bool IsValid(EntityRef entity) const final
 		{
-			if (!entity.IsValid() || (entity.Owner != this))
+			if (!entity.IsValid() || (entity.Owner != this) || (entity.Index >= mEntities.size()))
 				return false;
-			if (entity.Index >= mEntities.size())
-				return false;
-
-			return mEntities[entity.Index].Guid == entity.Guid;
+			else
+				return mEntities[entity.Index].Guid == entity.Guid;
 		}
 
 		template<typename T>
@@ -1079,7 +1089,6 @@ namespace au {
 			source_entity.Guid = kInvalidEntityGuid;
 			source_entity.Index = kInvalidEntityIndex;
 
-			Log::Trace(CODELOC, "Migrated entity ", ent.Guid, " from world ", (int) this, " to ", (int) destination);
 			return{ ent.Guid, ent.Index, destination, ent.UserValue };
 		}
 
@@ -1605,7 +1614,7 @@ namespace au {
 					{
 						TriggerOnMigrate<CompTypeD>(&(*it));
 						if (!mDestination->AddComponent(mDestinationEntity, *it))
-							Log::Error(CODELOC, "Could not migrate component component of type ", CompTypeD::Id(), " for entity ", mSourceEntity.Guid);
+							throw ComponentMigrationFailureException(CompTypeD::Id(), mSourceEntity.Guid);
 					}
 				}
 			}
