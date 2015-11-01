@@ -3,10 +3,11 @@ AurumECS is an experimental header-only C++ which makes heavy usage of C++11 var
 
 # Features
 * Double buffered components which allow processes to read and write to the same component at the same time.
-* Ownership-based iterator design which makes the relationship between a process and the data it requires to function and modifies explicit. This also prevents multiple processes from writing to the same component at the same time (unless the user provides assurances that it is safe, see [basic_shared_auth] for an example).
+* Ownership-based iterator design which makes the relationship between a process and the data it requires to function and modifies explicit. This also prevents multiple processes from writing to the same component at the same time (unless the user provides assurances that it is safe, see [shared authority] for an example).
 * Data-oriented - components are just POD with some helper functions.
 * Support for multithreaded World processing and updates
 * Builtin timing for each step during a World's update.
+* Header-only - simply add the include directory in your project's include paths and it's ready to use.
 
 Note that due to its design it also has a higher memory usage than other ECS systems and is slightly more complex when dealing with large amount of components.
 
@@ -18,9 +19,10 @@ Note that due to its design it also has a higher memory usage than other ECS sys
 Coming soon, see [Examples] for now.
 
 # Examples
-* basic.cpp - Demonstrates basic ECS functionality.
-* basic_shared_authority.cpp - Demonstrates how two or more processes can modify the same component simultaneously.
-* mt_experimental.cpp - Example of how to use a MultithreadedDispatcher to parallelize process execution.
+A Visual Studio 2015 solution with the examples is available under [Examples].
+* [basic] - An extremely simple example of how the project can be used.
+* [shared authority] - Demonstrates how two or more processes can modify the same component simultaneously.
+* [multithreaded] - Shows how dispatchers can be used to select wether to parallelize process execution or not.
 
 # Pending Work
 * Review and stabilize World API
@@ -33,5 +35,7 @@ Coming soon, see [Examples] for now.
 * Support user logging
 * Add support for specifying that components don't need to be destroyed
 
-[basic_shared_auth]: ./examples/basic_shared_authority.cpp
+[basic]: ./examples/basic.cpp
+[shared authority]: ./examples/basic_shared_authority.cpp
+[multithreaded]: ./examples/mt_experimental.cpp
 [Examples]: ./examples
