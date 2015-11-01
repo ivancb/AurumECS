@@ -100,7 +100,7 @@ namespace au {
 		}
 	};
 
-	// Core class of the ECS, contains Entities, Components and Processes
+	// Core class of the ECS. Contains Entities, Components and Processes.
 	template<typename DispatcherType, typename... ComponentTypes>
 	class World : public IWorld {
 		struct ProcessData {
@@ -327,29 +327,15 @@ namespace au {
 			}
 
 			// Execute the pending updates locally
-			std::sort(mPendingComponentActions.begin(), mPendingComponentActions.end(), [](const ComponentAction& lhs, const ComponentAction& rhs)
-			{
-				return (lhs.index < rhs.index) || ((lhs.index == rhs.index) && (lhs.owner.Index < rhs.owner.Index)) ||
-					((lhs.index == rhs.index) && (lhs.owner.Index == rhs.owner.Index) && (lhs.owner.Guid < rhs.owner.Guid));
-			});
-			foreach_tuple_element(mComponents, AddPendingComponents(this));
-			mPendingComponentActions.clear();
-			memset(mComponentCountDelta, 0, sizeof(mComponentCountDelta));
-			foreach_tuple_element(mComponents, SwapBuffers());
+			ExecutePendingUpdates();
+			tuple_for_each(mComponents, SwapBuffers());
 
 			// Execute the pending updates on the destination
-			std::sort(destination->mPendingComponentActions.begin(), destination->mPendingComponentActions.end(), [](const ComponentAction& lhs, const ComponentAction& rhs)
-			{
-				return (lhs.index < rhs.index) || ((lhs.index == rhs.index) && (lhs.owner.Index < rhs.owner.Index)) ||
-					((lhs.index == rhs.index) && (lhs.owner.Index == rhs.owner.Index) && (lhs.owner.Guid < rhs.owner.Guid));
-			});
-			foreach_tuple_element(destination->mComponents, AddPendingComponents(this));
-			destination->mPendingComponentActions.clear();
-			memset(destination->mComponentCountDelta, 0, sizeof(mComponentCountDelta));
-			foreach_tuple_element(destination->mComponents, SwapBuffers());
+			destination->ExecutePendingUpdates();
+			tuple_for_each(destination->mComponents, SwapBuffers());
 
 			for (auto& entity : performed_migrations)
-				foreach_tuple_element(destination->mComponents, ComponentMigrationNotifier(destination, destination->FindEntityPtr(entity.Guid)));
+				tuple_for_each(destination->mComponents, ComponentMigrationNotifier(destination, destination->FindEntityPtr(entity.Guid)));
 
 			Log::Trace(CODELOC, "Migrated entity ", destination_entity.Guid, " from world ", (int) this, " to ", (int) destination);
 			return destination_entity;
@@ -514,47 +500,47 @@ namespace au {
 			}
 		}
 
-		void* GetRawComponent(EntityRef ent, size_t componentId, unsigned char idx = 0) override
+		inline void* GetRawComponent(EntityRef ent, size_t componentId, unsigned char idx = 0) final
 		{
 			return GetRawComponentImpl<ComponentTypes...>(ent, componentId, idx);
 		}
 
-		unsigned char CountRawComponents(EntityRef ent, size_t componentId) const override
+		inline unsigned char CountRawComponents(EntityRef ent, size_t componentId) const final
 		{
 			return CountRawComponentsImpl<ComponentTypes...>(ent, componentId);
 		}
 
-		void* GetRawFutureComponent(EntityRef ent, size_t componentId, unsigned char idx = 0) override
+		inline void* GetRawFutureComponent(EntityRef ent, size_t componentId, unsigned char idx = 0) final
 		{
 			return GetRawFutureComponentImpl<ComponentTypes...>(ent, componentId, idx);
 		}
 
-		unsigned char CountRawFutureComponents(EntityRef ent, size_t componentId) const override
+		inline unsigned char CountRawFutureComponents(EntityRef ent, size_t componentId) const final
 		{
 			return CountRawFutureComponentsImpl<ComponentTypes...>(ent, componentId);
 		}
 
 		/// Attempts to return a pointer to the specified component contained within a present buffer
 		/// Returns null if the entity's invalid or does not possess this component
-		/// NOTE: This function is unsafe and does not verify if there's already an authority for this component type
+		/// NOTE: This function is unsafe and does not verify if there's already an authority request for this component type
 		/// and also does not prevent any data races.
 		template<typename T>
-		T* GetComponent(EntityRef ent, unsigned char idx = 0)
+		inline T* GetComponent(EntityRef ent, unsigned char idx = 0)
 		{
 			return GetComponentInContainer<T>(ent, std::get<typename ComponentContainer<T>>(mComponents).PresentBuffer, idx);
 		}
 
 		/// Attempts to return a pointer to the specified component contained within a future buffer
 		/// Returns null if the entity's invalid or does not possess this component
-		/// NOTE: This function is unsafe and does not verify if there's already an authority for this component type.
+		/// NOTE: This function is unsafe and does not verify if there's already an authority request for this component type.
 		template<typename T>
-		T* GetFutureComponent(EntityRef ent, unsigned char idx = 0)
+		inline T* GetFutureComponent(EntityRef ent, unsigned char idx = 0)
 		{
 			return GetComponentInContainer<T>(ent, std::get<typename ComponentContainer<T>>(mComponents).FutureBuffer, idx);
 		}
 
 		template<typename T>
-		unsigned char CountComponents(EntityRef ent) const
+		inline unsigned char CountComponents(EntityRef ent) const
 		{
 			auto* entp = FindEntityPtr(ent.Guid);
 
@@ -565,7 +551,7 @@ namespace au {
 		}
 
 		template<typename T>
-		unsigned char CountInternalComponents(EntityRef ent) const
+		inline unsigned char CountInternalComponents(EntityRef ent) const
 		{
 			auto* entp = FindEntityPtr(ent.Guid);
 
@@ -617,7 +603,7 @@ namespace au {
 		}
 
 		template<typename T>
-		T* GetProcess() const
+		inline T* GetProcess() const
 		{
 			return (T*) GetProcessById(T::ProcessTypeId);
 		}
@@ -686,14 +672,7 @@ namespace au {
 
 			// Update components
 			start_time = std::chrono::high_resolution_clock::now();
-			std::sort(mPendingComponentActions.begin(), mPendingComponentActions.end(), [](const ComponentAction& lhs, const ComponentAction& rhs)
-			{
-				return (lhs.index < rhs.index) || ((lhs.index == rhs.index) && (lhs.owner.Index < rhs.owner.Index)) ||
-					((lhs.index == rhs.index) && (lhs.owner.Index == rhs.owner.Index) && (lhs.owner.Guid < rhs.owner.Guid));
-			});
-			tuple_for_each(mComponents, AddPendingComponents(this));
-			mPendingComponentActions.clear();
-			memset(mComponentCountDelta, 0, sizeof(mComponentCountDelta));
+			ExecutePendingUpdates();
 			delta_time = std::chrono::high_resolution_clock::now() - start_time;
 			mMetrics.ComponentUpdateTime = delta_time.count();
 
@@ -830,7 +809,7 @@ namespace au {
 			{
 			}
 
-			bool SeekTo(EntityType entity)
+			inline bool SeekTo(EntityType entity)
 			{
 				mOwner->mEntities[entity.Index]
 			}
@@ -881,14 +860,14 @@ namespace au {
 				return mCurEntityIndex != mOwner->mEntities.size();
 			}
 
-			EntityRef GetEntityRef()
+			inline EntityRef GetEntityRef()
 			{
 				auto ent = mOwner->mEntities[mCurEntityIndex];
 				return{ ent.Guid, mCurEntityIndex, mOwner, ent.UserValue };
 			}
 
 			template<typename T>
-			size_t Count()
+			inline size_t Count() const
 			{
 				if (mCurEntityIndex == kInvalidEntityIndex)
 					throw std::runtime_error("invalid iterator");
@@ -897,7 +876,7 @@ namespace au {
 			}
 
 			template<typename T>
-			size_t CountEdit()
+			inline size_t CountEdit() const
 			{
 				if (mCurEntityIndex == kInvalidEntityIndex)
 					throw std::runtime_error("invalid iterator");
@@ -1088,8 +1067,8 @@ namespace au {
 			source_entity.Guid = EntityRef::Invalid.Guid;
 
 			// Migrate the components
-			foreach_tuple_element(mComponents, QueueRemoval(this, source_entity, false));
-			foreach_tuple_element(mComponents, ComponentMigrator(this, destination, source_entity, ent, inherited_migrations));
+			tuple_for_each(mComponents, QueueRemoval(this, source_entity, false));
+			tuple_for_each(mComponents, ComponentMigrator(this, destination, source_entity, ent, inherited_migrations));
 
 			// Queue the source entity removal
 			memset(source_entity.ComponentCount, 0, sizeof(source_entity.ComponentCount));
@@ -1192,12 +1171,12 @@ namespace au {
 			return ComponentIterator<AuthoritySet<>, OptionalSet<>, ComponentSet<MaybeOptional, T...>>(this);
 		}
 
-		void* GetUserPointer() const override
+		inline void* GetUserPointer() const final
 		{
 			return mUserPtr;
 		}
 
-		void SetUserPointer(void* ptr) override
+		inline void SetUserPointer(void* ptr) final
 		{
 			mUserPtr = ptr;
 		}
@@ -1247,7 +1226,7 @@ namespace au {
 		}
 
 		template<typename T>
-		void* GetRawComponentImpl(EntityRef ent, size_t componentId, unsigned char idx = 0)
+		inline void* GetRawComponentImpl(EntityRef ent, size_t componentId, unsigned char idx = 0)
 		{
 			if (T::Id() == componentId)
 				return GetComponent<T>(ent, idx);
@@ -1256,7 +1235,7 @@ namespace au {
 		}
 
 		template<typename T, typename U, typename... V>
-		void* GetRawComponentImpl(EntityRef ent, size_t componentId, unsigned char idx = 0)
+		inline void* GetRawComponentImpl(EntityRef ent, size_t componentId, unsigned char idx = 0)
 		{
 			if (T::Id() == componentId)
 				return GetComponent<T>(ent, idx);
@@ -1265,7 +1244,7 @@ namespace au {
 		}
 
 		template<typename T>
-		unsigned char CountRawComponentsImpl(EntityRef ent, size_t componentId) const
+		inline unsigned char CountRawComponentsImpl(EntityRef ent, size_t componentId) const
 		{
 			if (T::Id() == componentId)
 				return CountComponents<T>(ent);
@@ -1274,7 +1253,7 @@ namespace au {
 		}
 
 		template<typename T, typename U, typename... V>
-		unsigned char CountRawComponentsImpl(EntityRef ent, size_t componentId) const
+		inline unsigned char CountRawComponentsImpl(EntityRef ent, size_t componentId) const
 		{
 			if (T::Id() == componentId)
 				return CountComponents<T>(ent);
@@ -1283,7 +1262,7 @@ namespace au {
 		}
 
 		template<typename T>
-		void* GetRawFutureComponentImpl(EntityRef ent, size_t componentId, unsigned char idx = 0)
+		inline void* GetRawFutureComponentImpl(EntityRef ent, size_t componentId, unsigned char idx = 0)
 		{
 			if (T::Id() == componentId)
 				return GetFutureComponent<T>(ent, idx);
@@ -1292,7 +1271,7 @@ namespace au {
 		}
 
 		template<typename T, typename U, typename... V>
-		void* GetRawFutureComponentImpl(EntityRef ent, size_t componentId, unsigned char idx = 0)
+		inline void* GetRawFutureComponentImpl(EntityRef ent, size_t componentId, unsigned char idx = 0)
 		{
 			if (T::Id() == componentId)
 				return GetFutureComponent<T>(ent, idx);
@@ -1301,7 +1280,7 @@ namespace au {
 		}
 
 		template<typename T>
-		unsigned char CountRawFutureComponentsImpl(EntityRef ent, size_t componentId) const
+		inline unsigned char CountRawFutureComponentsImpl(EntityRef ent, size_t componentId) const
 		{
 			if (T::Id() == componentId)
 				return CountInternalComponents<T>(ent);
@@ -1310,7 +1289,7 @@ namespace au {
 		}
 
 		template<typename T, typename U, typename... V>
-		unsigned char CountRawFutureComponentsImpl(EntityRef ent, size_t componentId) const
+		inline unsigned char CountRawFutureComponentsImpl(EntityRef ent, size_t componentId) const
 		{
 			if (T::Id() == componentId)
 				return CountInternalComponents<T>(ent);
@@ -1318,15 +1297,25 @@ namespace au {
 				return CountRawFutureComponentsImpl<U, V...>(ent, componentId);
 		}
 
+		void ExecutePendingUpdates()
+		{
+			std::sort(mPendingComponentActions.begin(), mPendingComponentActions.end(), [](const ComponentAction& lhs, const ComponentAction& rhs) {
+				return (lhs.index < rhs.index) || ((lhs.index == rhs.index) && (lhs.owner.Index < rhs.owner.Index)) ||
+					((lhs.index == rhs.index) && (lhs.owner.Index == rhs.owner.Index) && (lhs.owner.Guid < rhs.owner.Guid));
+			});
+
+			tuple_for_each(mComponents, AddPendingComponents(this));
+			mPendingComponentActions.clear();
+			memset(mComponentCountDelta, 0, sizeof(mComponentCountDelta));
+		}
+
 		/// Attempts to find an entity that has the specified GUID in the
 		/// current entities vector by using binary search.
-		const EntityType* FindEntityPtr(size_t guid) const
+		inline const EntityType* FindEntityPtr(size_t guid) const
 		{
 			auto ent = FindFirstEntity(guid);
 
-			if (ent == mEntitySearchList.end())
-				return nullptr;
-			else if (ent->Guid != guid)
+			if ((ent == mEntitySearchList.end()) || (ent->Guid != guid))
 				return nullptr;
 			else
 				return &mEntities[ent->Index];
@@ -1334,13 +1323,11 @@ namespace au {
 
 		/// Attempts to find an entity that has the specified GUID in the
 		/// current entities vector by using binary search.
-		EntityType* FindEntityPtr(size_t guid)
+		inline EntityType* FindEntityPtr(size_t guid)
 		{
 			auto ent = FindFirstEntity(guid);
 
-			if (ent == mEntitySearchList.end())
-				return nullptr;
-			else if (ent->Guid != guid)
+			if ((ent == mEntitySearchList.end()) || (ent->Guid != guid))
 				return nullptr;
 			else
 				return &mEntities[ent->Index];
