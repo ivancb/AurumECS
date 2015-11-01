@@ -4,10 +4,10 @@
 int main(int argc, char **argv)
 {
 	BasicUsageExample();
-	getchar();
+	printf("Press enter to continue\n"); getchar();
 	BasicSharedAuthorityExample();
-	getchar();
+	printf("Press enter to continue\n"); getchar();
 	MultithreadedWorldProcessingExample();
-	getchar();
+	printf("Press enter to continue\n"); getchar();
 	return 0;
 }

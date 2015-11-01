@@ -140,7 +140,7 @@ void BasicSharedAuthorityExample()
 	}
 
 	// Create the processes
-	//world.AddProcess(new TransformPrintProcess(&world), 0);
+	world.AddProcess(new TransformPrintProcess(&world), 0);
 	world.AddProcess(new TransformUpdateProcess1(&world), 0);
 	world.AddProcess(new TransformRotationUpdateProcess(&world), 0);
 
