@@ -1,5 +1,5 @@
 ## Introduction
-AurumECS is an experimental header-only C++ library which makes heavy usage of variadic templates and template metaprogramming to provide a type safe, data-oriented and ownership-based entity component system. Developed with the aim of being used in games.
+AurumECS is an experimental header-only C++ library which makes heavy usage of variadic templates and template metaprogramming to provide a type safe, data-oriented and ownership-based entity component system. It is under development with the aim of being used in games.
 
 ## Features
 * Double buffered components which allow processes to read and write to the same component at the same time.
