@@ -182,4 +182,20 @@ namespace au {
 	struct index_of : type_tuple<U...>::template index_of<T>::type
 	{
 	};
+
+	template <typename TupleT, typename CallbackT, std::size_t ...Is>
+	void tuple_for_each_impl(TupleT&& tuple, CallbackT&& fn, std::index_sequence<Is...>)
+	{
+		(void) std::initializer_list<int>
+		{
+			(fn(std::get<Is>(std::forward<TupleT>(tuple))), int{})...
+		};
+	}
+
+	template <typename TupleT, typename CallbackT>
+	void tuple_for_each(TupleT&& tuple, CallbackT&& fn)
+	{
+		constexpr std::size_t size = std::tuple_size<typename std::decay<TupleT>::type>::value;
+		tuple_for_each_impl(std::forward<TupleT>(tuple), std::forward<CallbackT>(fn), std::make_index_sequence<size>{});
+	}
 }

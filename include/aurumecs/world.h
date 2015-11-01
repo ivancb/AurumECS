@@ -9,8 +9,7 @@
 #include "iprocess.h"
 #include "entity.h"
 #include "component_container.h"
-#include "type_tuple.h"
-#include "tuple.h"
+#include "type_seqs.h"
 
 namespace au {
 	namespace detail {
@@ -170,7 +169,7 @@ namespace au {
 
 		~World()
 		{
-			foreach_tuple_element(mComponents, DestroyComponents());
+			tuple_for_each(mComponents, DestroyComponents());
 
 			for (auto& procgroup : mProcessGroups)
 			{
@@ -697,7 +696,7 @@ namespace au {
 				return (lhs.index < rhs.index) || ((lhs.index == rhs.index) && (lhs.owner.Index < rhs.owner.Index)) ||
 					((lhs.index == rhs.index) && (lhs.owner.Index == rhs.owner.Index) && (lhs.owner.Guid < rhs.owner.Guid));
 			});
-			foreach_tuple_element(mComponents, AddPendingComponents(this));
+			tuple_for_each(mComponents, AddPendingComponents(this));
 			mPendingComponentActions.clear();
 			memset(mComponentCountDelta, 0, sizeof(mComponentCountDelta));
 			delta_time = std::chrono::high_resolution_clock::now() - start_time;
@@ -729,7 +728,7 @@ namespace au {
 
 			// Housekeeping
 			start_time = std::chrono::high_resolution_clock::now();
-			foreach_tuple_element(mComponents, SwapBuffers(this));
+			tuple_for_each(mComponents, SwapBuffers(this));
 
 			for (auto& entity : mEntities)
 				memcpy(entity.ComponentCount, entity.InternalComponentCount, sizeof(entity.InternalComponentCount));
@@ -1410,7 +1409,7 @@ namespace au {
 						}
 					}
 
-					foreach_tuple_element(mComponents, QueueRemoval(this, *ent));
+					tuple_for_each(mComponents, QueueRemoval(this, *ent));
 
 					memset(ent->ComponentCount, 0, sizeof(ent->ComponentCount));
 					memset(ent->InternalComponentCount, 0, sizeof(ent->InternalComponentCount));
