@@ -4,20 +4,6 @@
 namespace au {
 	const EntityRef EntityRef::Invalid{ kInvalidEntityGuid, kInvalidEntityIndex, nullptr, 0 };
 
-	bool EntityRef::Destroy()
-	{
-		if (IsValid())
-		{
-			if (Owner->RemoveEntity(*this))
-			{
-				*this = Invalid;
-				return true;
-			}
-		}
-
-		return false;
-	}
-
 	bool EntityRef::Acquire()
 	{
 		if (Guid == kInvalidEntityGuid)
@@ -38,6 +24,20 @@ namespace au {
 		}
 
 		return true;
+	}
+
+	bool EntityRef::Destroy()
+	{
+		if (IsValid())
+		{
+			if (Owner->RemoveEntity(*this))
+			{
+				*this = Invalid;
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	void* EntityRef::GetRawComponent(size_t componentId, size_t index)

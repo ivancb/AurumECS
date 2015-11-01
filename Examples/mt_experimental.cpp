@@ -4,48 +4,15 @@
 
 #include <cstdio>
 #include <random>
-
-#include <ECS/World.h>
-#include <ECS/ComponentId.h>
-#include <ECS/IProcess.h>
-#include <ECS/SinglethreadedDispatcher.h>
-#include <ECS/MultithreadedDispatcher.h>
-
+#include <aurumecs/World.h>
+#include <aurumecs/ComponentId.h>
+#include <aurumecs/IProcess.h>
+#include <aurumecs/SinglethreadedDispatcher.h>
+#include <aurumecs/MultithreadedDispatcher.h>
+#include "examples.h"
+#include "components.h"
 
 using namespace au;
-
-struct TransformComponent {
-	COMPONENT_INFO(Transform, 0);
-
-	float Position[3];
-	float Velocity[3];
-
-	static TransformComponent Create()
-	{
-		TransformComponent c = {};
-		return c;
-	}
-
-	void Destroy()
-	{
-	}
-};
-
-struct RandomThingComponent {
-	COMPONENT_INFO(RandomThing, 1);
-
-	int RandomThing;
-
-	static RandomThingComponent Create()
-	{
-		RandomThingComponent c = {};
-		return c;
-	}
-
-	void Destroy()
-	{
-	}
-};
 
 // IMPORTANT: The number after MultiThreadedDispatcher is the number of threads to create.
 // Note however that the number of effective processing threads is NumThreads + 1, since it
@@ -150,8 +117,10 @@ double RunExample(int num_entities, int iterations)
 	return acc;
 }
 
-int main(int argc, char** argv)
+void MultithreadedWorldProcessingExample()
 {
+	printf("Multithreaded world example ---------------\n");
+
 	const int k_entity_count = 1000000;
 	const int k_iteration_count = 100;
 
@@ -165,5 +134,5 @@ int main(int argc, char** argv)
 		printf("-------------\n\n");
 	}
 
-	return 0;
+	printf("Multithreaded world example end ---------------\n");
 }

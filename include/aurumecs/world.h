@@ -398,7 +398,7 @@ namespace au {
 			if (fent)
 				return{ fent->Guid, fent->Index, (IWorld*)this, fent->UserValue };
 			else
-				return EntityRef::Invalid;
+				return EntityRef::InvalidRef();
 		}
 
 		EntityRef FindEntityExt(size_t guid) const override
@@ -408,7 +408,7 @@ namespace au {
 			if (fent)
 				return{ fent->Guid, fent->Index, (IWorld*)this, fent->UserValue };
 			else
-				return EntityRef::Invalid;
+				return EntityRef::InvalidRef();
 		}
 
 		/// Verifies the specified entity's validity and if it is contained within the current entity vector.

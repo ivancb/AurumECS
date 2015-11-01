@@ -2,6 +2,7 @@
 
 namespace au {
 	using ComponentIdType = size_t;
+}
 
 #ifndef COMPONENT_INFO
 #define COMPONENT_INFO(x, id_value) static ::au::ComponentIdType Id() { return (::au::ComponentIdType)id_value; } \
@@ -13,4 +14,3 @@ namespace au {
 	static const char* IdName() { return #x; } \
 	size_t OwnerIndex
 #endif
-}

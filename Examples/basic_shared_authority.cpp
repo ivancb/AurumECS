@@ -7,32 +7,14 @@
 // the requested components simultaneously, without triggering the "borrow checker" in World.
 
 #include <cstdio>
-#include <ECS/World.h>
-#include <ECS/ComponentId.h>
-#include <ECS/IProcess.h>
-#include <ECS/SinglethreadedDispatcher.h>
+#include <aurumecs/World.h>
+#include <aurumecs/ComponentId.h>
+#include <aurumecs/IProcess.h>
+#include <aurumecs/SinglethreadedDispatcher.h>
+#include "examples.h"
+#include "components.h"
 
 using namespace au;
-
-// Basic component definition
-struct TransformComponent {
-	COMPONENT_INFO(Transform, 0);
-
-	float Position[3];
-	float Rotation[3]; // Note: Euler angles are a bad idea in most cases, not so for an example
-	float Velocity[3];
-	float AngularVelocity[3];
-
-	static TransformComponent Create()
-	{
-		TransformComponent c = {};
-		return c;
-	}
-
-	void Destroy()
-	{
-	}
-};
 
 // Game world type alias, useful for processes
 using GameWorld = World<SingleThreadedDispatcher, TransformComponent>;
@@ -54,13 +36,13 @@ using GameWorld = World<SingleThreadedDispatcher, TransformComponent>;
 // to allow processes using this key to run in the same process set concurrently.
 static int Key = 15123931;
 
-class TransformUpdateProcess : public IProcess {
+class TransformUpdateProcess1 : public IProcess {
 private:
 	GameWorld* mOwner;
 public:
 	PROCESS_BOILERPLATE(0);
 
-	TransformUpdateProcess(GameWorld* owner) : mOwner(owner)
+	TransformUpdateProcess1(GameWorld* owner) : mOwner(owner)
 	{
 	}
 
@@ -128,8 +110,10 @@ public:
 	}
 };
 
-int main(int argc, char** argv)
+void BasicSharedAuthorityExample()
 {
+	printf("Basic shared authority example ---------------\n");
+
 	GameWorld world;
 
 	// Create entities
@@ -156,8 +140,8 @@ int main(int argc, char** argv)
 	}
 
 	// Create the processes
-	world.AddProcess(new TransformPrintProcess(&world), 0);
-	world.AddProcess(new TransformUpdateProcess(&world), 0);
+	//world.AddProcess(new TransformPrintProcess(&world), 0);
+	world.AddProcess(new TransformUpdateProcess1(&world), 0);
 	world.AddProcess(new TransformRotationUpdateProcess(&world), 0);
 
 	// Actually update the world state
@@ -167,5 +151,5 @@ int main(int argc, char** argv)
 		world.Process(0.016);
 	}
 
-	return 0;
+	printf("Basic shared authority example end ---------------\n");
 }

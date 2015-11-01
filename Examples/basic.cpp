@@ -1,28 +1,12 @@
 #include <cstdio>
-#include <ECS/World.h>
-#include <ECS/ComponentId.h>
-#include <ECS/IProcess.h>
-#include <ECS/SinglethreadedDispatcher.h>
+#include <aurumecs/World.h>
+#include <aurumecs/ComponentId.h>
+#include <aurumecs/IProcess.h>
+#include <aurumecs/SinglethreadedDispatcher.h>
+#include "examples.h"
+#include "components.h"
 
 using namespace au;
-
-// Basic component definition
-struct TransformComponent {
-	COMPONENT_INFO(Transform, 0);
-
-	float Position[3];
-	float Velocity[3];
-
-	static TransformComponent Create()
-	{
-		TransformComponent c = {};
-		return c;
-	}
-
-	void Destroy()
-	{
-	}
-};
 
 // Game world type alias, useful for processes
 using GameWorld = World<SingleThreadedDispatcher, TransformComponent>;
@@ -85,8 +69,9 @@ public:
 	}
 };
 
-int main(int argc, char** argv)
+void BasicUsageExample()
 {
+	printf("Basic example ---------------\n");
 	GameWorld world;
 
 	// Create entities
@@ -119,5 +104,5 @@ int main(int argc, char** argv)
 		world.Process(0.016);
 	}
 
-	return 0;
+	printf("Basic example end ---------------\n");
 }

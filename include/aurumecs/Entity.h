@@ -1,5 +1,4 @@
 #pragma once
-
 #include <type_traits>
 
 namespace au {
@@ -25,7 +24,14 @@ namespace au {
 		IWorld* Owner;
 		int UserValue;
 
+		bool Acquire();
 		bool Destroy();
+
+		// Relatively unsafe methods
+		unsigned char CountRawComponent(size_t componentId);
+		unsigned char CountRawEditComponent(size_t componentId);
+		void* GetRawComponent(size_t componentId, size_t index);
+		void* GetRawEditComponent(size_t componentId, size_t index);
 
 		inline bool IsAcquired() const
 		{
@@ -38,50 +44,45 @@ namespace au {
 		}
 
 		template<typename T>
-		T* GetComponent()
+		inline T* GetComponent()
 		{
 			return (T*) GetRawComponent(T::Id(), 0);
 		}
 
 		template<typename T>
-		T* GetComponentByIndex(unsigned char idx)
+		inline T* GetComponentByIndex(unsigned char idx)
 		{
 			return (T*) GetRawComponent(T::Id(), idx);
 		}
 
 		template<typename T>
-		unsigned char GetComponentCount()
+		inline unsigned char GetComponentCount()
 		{
 			return CountRawComponent(T::Id());
 		}
 
 		template<typename T>
-		T* GetEditComponent()
+		inline T* GetEditComponent()
 		{
 			return (T*) GetRawEditComponent(T::Id(), 0);
 		}
 
 		template<typename T>
-		T* GetEditComponentByIndex(unsigned char idx)
+		inline T* GetEditComponentByIndex(unsigned char idx)
 		{
 			return (T*) GetRawEditComponent(T::Id(), idx);
 		}
 
 		template<typename T>
-		unsigned char GetEditComponentCount()
+		inline unsigned char GetEditComponentCount()
 		{
 			return CountRawEditComponent(T::Id());
 		}
 
-		bool Acquire();
-
-		static const EntityRef Invalid;
-
-		// Unsafe stuff
-		unsigned char CountRawComponent(size_t componentId);
-		unsigned char CountRawEditComponent(size_t componentId);
-		void* GetRawComponent(size_t componentId, size_t index);
-		void* GetRawEditComponent(size_t componentId, size_t index);
+		static inline EntityRef InvalidRef()
+		{
+			return{ kInvalidEntityGuid, kInvalidEntityIndex, nullptr, 0 };
+		}
 	};
 
 #define AUENT_IS_SAME_TYPE(x, y) std::is_same<decltype(x), decltype(y)>::value
