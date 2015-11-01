@@ -5,10 +5,10 @@
 #include <cstdio>
 #include <random>
 #include <aurumecs/World.h>
-#include <aurumecs/ComponentId.h>
-#include <aurumecs/IProcess.h>
-#include <aurumecs/SinglethreadedDispatcher.h>
-#include <aurumecs/MultithreadedDispatcher.h>
+#include <aurumecs/component.h>
+#include <aurumecs/iprocess.h>
+#include <aurumecs/st_dispatcher.h>
+#include <aurumecs/mt_dispatcher.h>
 #include "examples.h"
 #include "components.h"
 

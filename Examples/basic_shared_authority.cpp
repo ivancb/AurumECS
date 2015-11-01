@@ -7,10 +7,10 @@
 // the requested components simultaneously, without triggering the "borrow checker" in World.
 
 #include <cstdio>
-#include <aurumecs/World.h>
-#include <aurumecs/ComponentId.h>
-#include <aurumecs/IProcess.h>
-#include <aurumecs/SinglethreadedDispatcher.h>
+#include <aurumecs/world.h>
+#include <aurumecs/component.h>
+#include <aurumecs/iprocess.h>
+#include <aurumecs/st_dispatcher.h>
 #include "examples.h"
 #include "components.h"
 

@@ -1,5 +1,5 @@
 #pragma once
-#include <aurumecs/ComponentId.h>
+#include <aurumecs/component.h>
 
 struct TransformComponent {
 	COMPONENT_INFO(Transform, 0);

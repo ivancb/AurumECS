@@ -3,7 +3,7 @@
 #include <thread>
 #include <atomic>
 #include <vector>
-#include "IProcess.h"
+#include "iprocess.h"
 
 namespace au {
 	template<int NumThreads>

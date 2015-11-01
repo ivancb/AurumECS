@@ -5,12 +5,12 @@
 #include <chrono>
 #include <cassert>
 #include <Variant.h>
-#include "IWorld.h"
-#include "IProcess.h"
-#include "Entity.h"
-#include "ComponentContainer.h"
-#include "TypeTraits.h"
-#include "Tuple.h"
+#include "iworld.h"
+#include "iprocess.h"
+#include "entity.h"
+#include "component_container.h"
+#include "type_tuple.h"
+#include "tuple.h"
 
 namespace au {
 	namespace detail {

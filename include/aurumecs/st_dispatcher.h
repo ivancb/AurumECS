@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IProcess.h"
+#include "iprocess.h"
 
 namespace au {
 	class SingleThreadedDispatcher {
