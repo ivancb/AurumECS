@@ -1,0 +1,3 @@
+[submodule "variadic-variant"]
+	path = variadic-variant
+	url = https://github.com/kmicklas/variadic-variant
