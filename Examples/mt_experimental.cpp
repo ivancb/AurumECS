@@ -121,7 +121,7 @@ void MultithreadedWorldProcessingExample()
 {
 	printf("Multithreaded world example ---------------\n");
 
-	const int k_entity_count = 1000000;
+	const int k_entity_count = 10000;
 	const int k_iteration_count = 100;
 
 	for (int n = 0; n < 3; n++)
@@ -130,7 +130,7 @@ void MultithreadedWorldProcessingExample()
 		auto st_time = RunExample<STGameWorld>(k_entity_count, k_iteration_count);
 		auto mt_time = RunExample<MTGameWorld>(k_entity_count, k_iteration_count);
 
-		printf("Singlethreaded took %.2f ms\nMultithreaded took %.2f ms\nMT = %.2f %% of ST\n", st_time, mt_time, 100.f * ((float) mt_time) / st_time);
+		printf("Singlethreaded took %.6f ms\nMultithreaded took %.6f ms\nMT = %.4f %% of ST\n", st_time, mt_time, 100.f * ((float) mt_time) / st_time);
 		printf("-------------\n\n");
 	}
 
